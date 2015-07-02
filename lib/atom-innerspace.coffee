@@ -1,13 +1,16 @@
 module.exports = AtomInnerspace =
-    timeout: null
+    timeout: null,
+    re: /([^\s]*)(\s*)/g
 
     activate: (state) ->
         atom.workspace.observeTextEditors (editor) ->
             AtomInnerspace.showHiddenSpaces(editor)
 
+            # Update on change.
             editor.onDidChange ->
                 AtomInnerspace.update(editor, 10)
 
+            # Update on scroll.
             editor.onDidChangeScrollTop ->
                 AtomInnerspace.update(editor, 100)
 
@@ -22,24 +25,34 @@ module.exports = AtomInnerspace =
         v = atom.views.getView(editor);
 
         # Find all span tags inside each line.
-        lines = v.shadowRoot.querySelectorAll('.lines .line span')
-        AtomInnerspace.showHiddenSpace(span) for span in lines
+        lines = v.shadowRoot.querySelector('.lines')
+        AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(lines)
 
-    showHiddenSpace: (elem) ->
-        # Need to convert the space after the element.
-        if (elem.nextSibling and elem.nextSibling.nodeType == 3)
-            textNode = elem.nextSibling
-            r = ///^\s+$///
-            m = textNode.data.match(r)
+    convertSpaces: (textNode) ->
+        joinToNode = (res) ->
+            # Non space character.
+            if res[1].length > 0
+                newTextNode = document.createTextNode(res[1])
+                textNode.parentNode.insertBefore(newTextNode, textNode)
 
-            if m != null
+            # White space.
+            if res[2].length > 0
                 # Create a span with the invisible character 'dots'.
                 spacer = document.createElement('span')
-                spacer.innerHTML = '·'.repeat(m[0].length)
+                spacer.innerHTML = '·'.repeat(res[2].length)
+                textNode.parentNode.insertBefore(spacer, textNode)
 
                 # Use the invisible-character class for styling.
                 spacer.classList.add('invisible-character')
 
-                # Insert the span before the text node and then remove the text node.
-                textNode.parentNode.insertBefore(spacer, textNode)
-                textNode.parentNode.removeChild(textNode)
+
+        @re.lastIndex = 0
+        joinToNode(res) while (res = @re.exec(textNode.data)) and res and res[0].length > 0
+
+        # Remove the original text node.
+        textNode.parentNode.removeChild(textNode)
+
+    getTextNodes: (parent) ->
+        walk  = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT)
+        nodes = while node = walk.nextNode()
+            node
