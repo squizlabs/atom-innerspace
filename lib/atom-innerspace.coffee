@@ -1,14 +1,22 @@
 module.exports = AtomInnerspace =
+    timeout: null
+
     activate: (state) ->
         atom.workspace.observeTextEditors (editor) ->
             AtomInnerspace.showHiddenSpaces(editor)
-            timeout = null
-            editor.onDidChange ->
-                callback = ->
-                    AtomInnerspace.showHiddenSpaces(editor)
 
-                clearTimeout(timeout)
-                timeout = setTimeout(callback, 10)
+            editor.onDidChange ->
+                AtomInnerspace.update(editor, 10)
+
+            editor.onDidChangeScrollTop ->
+                AtomInnerspace.update(editor, 100)
+
+    update: (editor, delay) ->
+        callback = ->
+            AtomInnerspace.showHiddenSpaces(editor)
+
+        clearTimeout(@timeout)
+        @timeout = setTimeout(callback, delay)
 
     showHiddenSpaces: (editor) ->
         v = atom.views.getView(editor);
