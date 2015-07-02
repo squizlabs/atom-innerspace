@@ -4,31 +4,44 @@ module.exports = AtomInnerspace =
 
     activate: (state) ->
         atom.workspace.observeTextEditors (editor) ->
-            AtomInnerspace.showHiddenSpaces(editor)
+            AtomInnerspace.showHiddenSpaces(editor, false)
 
             # Update on change.
             editor.onDidChange ->
-                AtomInnerspace.update(editor, 10)
+                # Update the cursor line.
+                AtomInnerspace.update(editor, 10, true)
+
+            editor.onDidStopChanging ->
+                # Update every line.
+                AtomInnerspace.update(editor, 100, false)
 
             # Update on scroll.
             editor.onDidChangeScrollTop ->
                 AtomInnerspace.update(editor, 100)
 
-    update: (editor, delay) ->
+    update: (editor, delay, cursorLineOnly) ->
         callback = ->
-            AtomInnerspace.showHiddenSpaces(editor)
+            AtomInnerspace.showHiddenSpaces(editor, cursorLineOnly)
 
         clearTimeout(@timeout)
         @timeout = setTimeout(callback, delay)
 
-    showHiddenSpaces: (editor) ->
+    showHiddenSpaces: (editor, cursorLineOnly) ->
         v = atom.views.getView(editor);
 
-        # Find all span tags inside each line.
-        lines = v.shadowRoot.querySelector('.lines')
-        AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(lines)
+        if cursorLineOnly == true
+            cursorLine = v.shadowRoot.querySelector('.line.cursor-line')
+            AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(cursorLine)
+        else
+            # Get all text nodes inside the editor.
+            lines = v.shadowRoot.querySelector('.lines')
+            AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(lines)
 
     convertSpaces: (textNode) ->
+        if textNode.parentNode.className.indexOf('indent-guide') >= 0
+            # Ignore indent guide text nodes.
+            return
+
         joinToNode = (res) ->
             # Non space character.
             if res[1].length > 0
