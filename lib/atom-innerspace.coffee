@@ -29,16 +29,19 @@ module.exports = AtomInnerspace =
     showHiddenSpaces: (editor, cursorLineOnly) ->
         v = atom.views.getView(editor);
 
+        parent = null
+
         if cursorLineOnly == true
-            cursorLine = v.shadowRoot.querySelector('.line.cursor-line')
-            AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(cursorLine)
-        else
-            # Get all text nodes inside the editor.
-            lines = v.shadowRoot.querySelector('.lines')
-            AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(lines)
+            parent = v.shadowRoot.querySelector('.line.cursor-line')
+
+        if !parent
+            parent = v.shadowRoot.querySelector('.lines')
+
+        # Get all text nodes inside the editor.
+        AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(parent)
 
     convertSpaces: (textNode) ->
-        if textNode.parentNode.className.indexOf('indent-guide') >= 0
+        if textNode.parentNode.className.indexOf('indent-guide') >= 0 or textNode.parentNode.className.indexOf('line') >= 0
             # Ignore indent guide text nodes.
             return
 
