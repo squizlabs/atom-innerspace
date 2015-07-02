@@ -1,22 +1,32 @@
+{CompositeDisposable} = require 'atom'
+
 module.exports = AtomInnerspace =
     timeout: null,
     re: /([^\s]*)(\s*)/g
 
     activate: (state) ->
-        atom.workspace.observeTextEditors (editor) ->
+        @disposables = new CompositeDisposable
+
+        updateEditors = ->
+            for editor in atom.workspace.getTextEditors()
+                AtomInnerspace.showHiddenSpaces(editor, false)
+
+        setTimeout(updateEditors, 1000)
+
+        @disposables.add atom.workspace.observeTextEditors (editor) ->
             AtomInnerspace.showHiddenSpaces(editor, false)
 
             # Update on change.
-            editor.onDidChange ->
+            AtomInnerspace.disposables.add editor.onDidChange ->
                 # Update the cursor line.
                 AtomInnerspace.update(editor, 10, true)
 
-            editor.onDidStopChanging ->
+            AtomInnerspace.disposables.add editor.onDidStopChanging ->
                 # Update every line.
                 AtomInnerspace.update(editor, 100, false)
 
             # Update on scroll.
-            editor.onDidChangeScrollTop ->
+            AtomInnerspace.disposables.add editor.onDidChangeScrollTop ->
                 AtomInnerspace.update(editor, 100)
 
     update: (editor, delay, cursorLineOnly) ->
@@ -72,3 +82,6 @@ module.exports = AtomInnerspace =
         walk  = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT)
         nodes = while node = walk.nextNode()
             node
+
+    deactivate: ->
+        @disposables.dispose()
