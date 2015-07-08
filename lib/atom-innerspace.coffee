@@ -47,8 +47,9 @@ module.exports = AtomInnerspace =
         if !parent
             parent = v.shadowRoot.querySelector('.lines')
 
-        # Get all text nodes inside the editor.
-        AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(parent)
+        if (parent)
+            # Get all text nodes inside the editor.
+            AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(parent)
 
     convertSpaces: (textNode) ->
         if textNode.parentNode.classList.contains('indent-guide') == true or
