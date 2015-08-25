@@ -52,8 +52,10 @@ module.exports = AtomInnerspace =
             AtomInnerspace.convertSpaces(textNode) for textNode in @getTextNodes(parent)
 
     convertSpaces: (textNode) ->
-        if textNode.parentNode.classList.contains('indent-guide') == true or
-           (textNode.parentNode.classList.contains('line') == true and textNode.parentNode.classList.contains('comment') == false)
+        parentClassList = textNode.parentNode.classList
+        if parentClassList.contains('indent-guide') == true or
+           parentClassList.contains('hard-tab') == true or
+           (parentClassList.contains('line') == true and parentClassList.contains('comment') == false)
             # Ignore indent guide text nodes.
             return
 
